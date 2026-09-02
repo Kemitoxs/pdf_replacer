@@ -1,3 +1,7 @@
 /target
 dev.*
 /.idea
+/.venv
+!/out/.keepme
+/out/*
+Thumbs.db

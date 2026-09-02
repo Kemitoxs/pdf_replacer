@@ -13,24 +13,24 @@ parser = argparse.ArgumentParser(description="Example script")
 parser.add_argument("-p", "--pdf-file", required=True, help="Path to the PDF file")
 parser.add_argument("-c", "--csv-file", required=True, help="Path to the CSV file")
 parser.add_argument("-o", "--outdir", default="out", help="Output directory")
-parser.add_argument("-d", "--delimiter", default=",", help="CSV delimiter (default: ',')")
+parser.add_argument(
+    "-d", "--delimiter", default=",", help="CSV delimiter (default: ',')"
+)
 parser.add_argument(
     "-P",
     "--prefix",
     default="#",
-    help="Set the prefix used to mark annotation as to be replaced (default: #)"
+    help="Set the prefix used to mark annotation as to be replaced (default: #)",
 )
 parser.add_argument(
     "-f",
     "--fail",
     default=True,
-    help="Fail if hitting an annotation which is marked to be replaced but not in the CSV (default: True)"
+    help="Fail if hitting an annotation which is marked to be replaced but not in the CSV (default: True)",
 )
+parser.add_argument("-v", "--verbose", action="store_true", help="Print DEBUG")
 parser.add_argument(
-    "-v",
-    "--verbose",
-    action="store_true",
-    help="Print DEBUG"
+    "-a", "--appendix-col", help="Which column to use to set the attachment file."
 )
 args = parser.parse_args()
 
@@ -39,7 +39,7 @@ log_level = logging.DEBUG if args.verbose else logging.INFO
 logging.basicConfig(
     level=log_level,
     format="%(asctime)s - %(levelname)s - %(message)s",
-    datefmt = "%H:%M:%S"
+    datefmt="%H:%M:%S",
 )
 
 if not os.path.isfile(args.pdf_file):
@@ -54,7 +54,7 @@ if not os.path.isdir(args.outdir):
 
 csv_file = csv.DictReader(open(args.csv_file), delimiter=args.delimiter)
 
-for (idx, row) in enumerate(csv_file):
+for idx, row in enumerate(csv_file):
     # Repeatedly load the file, probably not very smart
     doc = pm.open(args.pdf_file)
 
@@ -68,14 +68,21 @@ for (idx, row) in enumerate(csv_file):
                 continue
 
             text: str = annot.info["content"]
-            if not text.startswith("#"):
-                logging.debug(f"Ignoring annotation (text: '{text}') because it doesn't start with {args.prefix}")
+            if not text.startswith(args.prefix):
+                logging.debug(
+                    f"Ignoring annotation (text: '{text}') because it doesn't start with {args.prefix}"
+                )
                 continue
-            logging.debug(f"Processing annotation (text: '{text}') because it starts with {args.prefix}")
+
+            logging.debug(
+                f"Processing annotation (text: '{text}') because it starts with {args.prefix}"
+            )
 
             key = text.strip(args.prefix)
             if not key in row and args.fail:
-                sys.exit(f"Encountered an annotation (text: '{text}') for who's key '{key}' we don't have a value in the CSV")
+                sys.exit(
+                    f"Encountered an annotation (text: '{text}') for who's key '{key}' we don't have a value in the CSV"
+                )
             elif not key in row and not args.fail:
                 # Just ignore it
                 continue
@@ -84,8 +91,13 @@ for (idx, row) in enumerate(csv_file):
             rect = annot.rect
             page.delete_annot(annot)
             page.add_freetext_annot(rect, value)
-            #annot.update(text=value)
+            # annot.update(text=value)
             logging.info(f"For row #{idx} replaced '{text}' with '{value}'")
 
-    doc.save(f"{args.outdir}/output-{idx}.pdf")
+    if args.appendix_col is not None and args.appendix_col in row:
+        file_name = row[args.appendix_col]
+        appendix = pm.open(file_name)
+        doc.insert_pdf(appendix)
+        logging.debug(f"Attached '{file_name}'")
 
+    doc.save(f"{args.outdir}/output-{idx}.pdf")
