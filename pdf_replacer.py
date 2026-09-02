@@ -52,7 +52,9 @@ if not os.path.isdir(args.outdir):
     sys.exit(f"Error: -o directory does not exist or is not a directory: {args.outdir}")
 
 
-csv_file = csv.DictReader(open(args.csv_file), delimiter=args.delimiter)
+csv_file = csv.DictReader(
+    open(args.csv_file, encoding="utf-8-sig"), delimiter=args.delimiter
+)
 
 for idx, row in enumerate(csv_file):
     # Repeatedly load the file, probably not very smart
