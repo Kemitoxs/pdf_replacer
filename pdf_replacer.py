@@ -37,6 +37,9 @@ parser.add_argument(
     "--sort-by",
     help="Sort by a column either ascending or descending. Format: 'a,<COLUMN_NAME>' or 'd,<COLUMN_NAME>",
 )
+parser.add_argument(
+    "--sort-by-number", action="store_true", help="When sorting only use numbers."
+)
 args = parser.parse_args()
 
 # Logging
@@ -65,8 +68,15 @@ csv_file = csv.DictReader(
 )
 rows = list(csv_file)
 
+
+def get_key(row):
+    if args.sort_by_number:
+        return int("".join(c for c in text if c.isdigit()))
+    return row
+
+
 if sort_by_column is not None:
-    rows = sorted(rows, key=lambda row: row[sort_by_column], reverse=descending)
+    rows = sorted(rows, key=get_key, reverse=descending)
 
 for idx, row in enumerate(rows):
     # Repeatedly load the file, probably not very smart
