@@ -71,7 +71,7 @@ rows = list(csv_file)
 
 def get_key(row):
     if args.sort_by_number:
-        return int("".join(c for c in text if c.isdigit()))
+        return int("".join(c for c in row[sort_by_column] if c.isdigit()))
     return row
 
 
